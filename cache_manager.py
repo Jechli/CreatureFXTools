@@ -3,6 +3,7 @@ from PySide2 import QtWidgets
 from shiboken2 import wrapInstance
 import maya.OpenMayaUI as omui
 import pymel.core as pm
+import os
 
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
@@ -22,15 +23,18 @@ class CacheManager(QtWidgets.QDialog):
         self.create_connections()
         
         
+        
     def create_widgets(self):
         
-        self.nDynamicsNodesLabel = QtWidgets.QLabel("nDynamics Nodes in Scene")
-        self.nDynamicsNodesLabel.setStyleSheet("padding:5px;")
+        self.default_file_loc = "C:/Users/J9e1n/OneDrive/Documents/maya/projects/default/cache/nCache/";
         
-        self.warningLabel = QtWidgets.QLabel("** Changing the name of the nodes in the scene will dissociate them from their original caches")
+        self.ndynamics_nodes_label = QtWidgets.QLabel("nDynamics Nodes in Scene")
+        self.ndynamics_nodes_label.setStyleSheet("padding:5px; font-weight:bold;")
         
-        self.nDynamicsNodesList = QtWidgets.QListWidget()
-        self.nDynamicsNodesList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.warning_label = QtWidgets.QLabel("** Changing the name of the nodes in the scene will dissociate them from their original caches")
+        
+        self.ndynamics_nodes_list = QtWidgets.QListWidget()
+        self.ndynamics_nodes_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         
         self.nClothCheckBox = QtWidgets.QCheckBox("nCloth")
         self.nClothCheckBox.setChecked(True)
@@ -38,30 +42,27 @@ class CacheManager(QtWidgets.QDialog):
         
         self.nHairCheckBox.setChecked(True)
         for node in self.getNDynamicsNodes():
-            self.nDynamicsNodesList.addItem(str(node))
+            self.ndynamics_nodes_list.addItem(str(node))
             
-        self.cacheLabel = QtWidgets.QLabel("Associated Caches")
-        self.cacheLabel.setStyleSheet("padding:5px;")
+        self.cacheLabel = QtWidgets.QLabel("Previous Caches")
+        self.cacheLabel.setStyleSheet("padding:5px; font-weight: bold;")
         
         self.cacheList = QtWidgets.QListWidget()
         self.cacheList.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         
         self.saveLocationLabel = QtWidgets.QLabel("Save Location")
-        self.saveLocationEdit = QtWidgets.QLineEdit("C:/Users/J9e1n/OneDrive/Documents/maya/projects/default/cache/nCache/")
+        self.saveLocationLabel.setStyleSheet("padding:5px; font-weight:bold;")
+        self.saveLocationEdit = QtWidgets.QLineEdit(self.default_file_loc)
         
         self.cacheNameLabel = QtWidgets.QLabel("Cache Name")
+        self.cacheNameLabel.setStyleSheet("padding:5px; font-weight:bold;")
         self.cacheNameEdit = QtWidgets.QLineEdit("general_settings")
     
         self.saveLocationDialog = QtWidgets.QFileDialog()
         self.saveLocationDialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
         
         self.saveButton = QtWidgets.QPushButton("Save Cache")
-        self.assignButton = QtWidgets.QPushButton("Assign Cache")
-        
-        self.checkBox1 = QtWidgets.QCheckBox("Check box 1")
-        self.checkBox2 = QtWidgets.QCheckBox("Check box 2")
-        self.button1 = QtWidgets.QPushButton("Button 1")
-        self.button2 = QtWidgets.QPushButton("Button 2")
+        self.assignButton = QtWidgets.QPushButton("Assign Selected Cache to Node")
         
     def create_layouts(self):
         
@@ -69,9 +70,9 @@ class CacheManager(QtWidgets.QDialog):
         self.nodes_checkboxes_layout.addWidget(self.nClothCheckBox)
         self.nodes_checkboxes_layout.addWidget(self.nHairCheckBox)
         self.nodes_list_layout = QtWidgets.QVBoxLayout()
-        self.nodes_list_layout.addWidget(self.nDynamicsNodesLabel)
-        self.nodes_list_layout.addWidget(self.warningLabel)
-        self.nodes_list_layout.addWidget(self.nDynamicsNodesList)
+        self.nodes_list_layout.addWidget(self.ndynamics_nodes_label)
+        self.nodes_list_layout.addWidget(self.warning_label)
+        self.nodes_list_layout.addWidget(self.ndynamics_nodes_list)
         self.nodes_list_layout.addLayout(self.nodes_checkboxes_layout)
         
         self.main_layout = QtWidgets.QVBoxLayout(self)
@@ -99,12 +100,15 @@ class CacheManager(QtWidgets.QDialog):
     def create_connections(self):
         self.nClothCheckBox.toggled.connect(self.setNDynamicsNodesList)
         self.nHairCheckBox.toggled.connect(self.setNDynamicsNodesList)
+        self.ndynamics_nodes_list.itemClicked.connect(self.setCachesList)
+        self.saveButton.clicked.connect(self.saveCache)
+        
         
         
     """
     Helper Functions
     """
-    # cmds.ls(type=['nCloth', 'hairSystem', 'nRigid'] )
+    # Get the list of nCloth and nHair nodes in the scene
     def getNDynamicsNodes(self):
         nFilter = []
         if self.nClothCheckBox.isChecked():
@@ -116,13 +120,69 @@ class CacheManager(QtWidgets.QDialog):
         nFilter.sort()
         return nFilter
         
-        
+    # Add the list of nCloth and nHair nodes to the cache list
     def setNDynamicsNodesList(self):
-        self.nDynamicsNodesList.clear()
+        self.ndynamics_nodes_list.clear()
         for node in self.getNDynamicsNodes():
-            self.nDynamicsNodesList.addItem(str(node))
+            self.ndynamics_nodes_list.addItem(str(node))
+            
+    # Set list of caches associated with selected node
+    def setCachesList(self):
+        items = self.ndynamics_nodes_list.selectedItems()
+        for i in items:
+            print(i.text())
+        #self.cacheList.clear()
+        #self.ndynamics_nodes_list.currentItem().text()
         
+            
+    # Save a cache file
+    def saveCache(self):
+        print(self.ndynamics_nodes_list.currentItem().text())
         
+        version = "2"
+        time_range_mode = "2"
+        start_frame = "1"
+        end_frame = "20"
+        cache_file_dist = "OneFile" #or OneFilePerFrame
+        refresh_caching = "1"
+        cache_directory = self.saveLocationEdit.text()
+        cache_per_geom = "0"
+        name_of_cache = self.ndynamics_nodes_list.currentItem().text() + "___" + self.cacheNameEdit.text()
+        cache_name_prefix = "0"
+        action_to_perform = "add" # replace, merge, mergeDelete
+        force_save = "0"
+        sim_rate = "1"
+        sample_mult = "1"
+        inherited_mods = "0"
+        store_doubles_as_floats = "1"
+        cache_file = "mcx"
+        
+        ncache_eval_str = 'doCreateNclothCache '
+        ncache_eval_str += version + ' { "'
+        ncache_eval_str += time_range_mode + '","'
+        ncache_eval_str += start_frame + '","'
+        ncache_eval_str += end_frame + '","'
+        ncache_eval_str += cache_file_dist + '","'
+        ncache_eval_str += refresh_caching + '","'
+        ncache_eval_str += cache_directory + '","'
+        ncache_eval_str += cache_per_geom + '","'
+        ncache_eval_str += name_of_cache + '","'
+        ncache_eval_str += cache_name_prefix + '","'
+        ncache_eval_str += action_to_perform + '","'
+        ncache_eval_str += force_save + '","'
+        ncache_eval_str += sim_rate + '","'
+        ncache_eval_str += sample_mult + '","'
+        ncache_eval_str += inherited_mods + '","'
+        ncache_eval_str += store_doubles_as_floats + '","'
+        ncache_eval_str += cache_file + '" } ;'
+        
+        select_node = self.ndynamics_nodes_list.currentItem().text()
+        pm.select(select_node)
+        pm.mel.eval(ncache_eval_str)
+        
+"""
+Run Window
+"""         
 if __name__ == "__main__":
     try:
         ui.deleteLater()

@@ -16,6 +16,7 @@ class PaintMapsManager(QtWidgets.QDialog):
         self.setWindowTitle("Paintmaps Manager")
         self.setMinimumWidth(400)
         self.setWindowFlags(QtCore.Qt.Window)
+        #self.setStyleSheet("background-color: orange; color: blue;")
         
         self.create_widgets()
         self.create_layouts()
@@ -96,7 +97,6 @@ class PaintMapsManager(QtWidgets.QDialog):
     """
     Helper Functions
     """
-    # cmds.ls(type=['nCloth', 'hairSystem', 'nRigid'] )
     def getNDynamicsNodes(self):
         nFilter = []
         if self.nClothCheckBox.isChecked():
@@ -117,7 +117,9 @@ class PaintMapsManager(QtWidgets.QDialog):
         for node in self.getNDynamicsNodes():
             self.nDynamicsNodesList.addItem(str(node))
         
-        
+"""
+Run Window
+"""        
 if __name__ == "__main__":
     try:
         ui.deleteLater()
