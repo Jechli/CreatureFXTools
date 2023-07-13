@@ -39,8 +39,9 @@ class CacheManager(QtWidgets.QDialog):
         self.nClothCheckBox = QtWidgets.QCheckBox("nCloth")
         self.nClothCheckBox.setChecked(True)
         self.nHairCheckBox = QtWidgets.QCheckBox("nHair")  
-        
         self.nHairCheckBox.setChecked(True)
+        self.refreshButton = QtWidgets.QPushButton("Refresh Nodes List")
+        
         for node in self.getNDynamicsNodes():
             self.ndynamics_nodes_list.addItem(str(node))
             
@@ -69,6 +70,7 @@ class CacheManager(QtWidgets.QDialog):
         self.nodes_checkboxes_layout = QtWidgets.QHBoxLayout()
         self.nodes_checkboxes_layout.addWidget(self.nClothCheckBox)
         self.nodes_checkboxes_layout.addWidget(self.nHairCheckBox)
+        self.nodes_checkboxes_layout.addWidget(self.refreshButton)
         self.nodes_list_layout = QtWidgets.QVBoxLayout()
         self.nodes_list_layout.addWidget(self.ndynamics_nodes_label)
         self.nodes_list_layout.addWidget(self.warning_label)
@@ -100,6 +102,7 @@ class CacheManager(QtWidgets.QDialog):
     def create_connections(self):
         self.nClothCheckBox.toggled.connect(self.setNDynamicsNodesList)
         self.nHairCheckBox.toggled.connect(self.setNDynamicsNodesList)
+        self.refreshButton.clicked.connect(self.setNDynamicsNodesList)
         self.ndynamics_nodes_list.itemClicked.connect(self.setCachesList)
         self.saveButton.clicked.connect(self.saveCache)
         
@@ -128,11 +131,15 @@ class CacheManager(QtWidgets.QDialog):
             
     # Set list of caches associated with selected node
     def setCachesList(self):
+        self.cacheList.clear()
         items = self.ndynamics_nodes_list.selectedItems()
-        for i in items:
-            print(i.text())
-        #self.cacheList.clear()
-        #self.ndynamics_nodes_list.currentItem().text()
+        if items:
+            first_item = items[0].text()
+            list_of_files = os.listdir(self.default_file_loc)
+            for i in list_of_files:
+                if i.endswith('.mc'):
+                    if (first_item+"__") in i:
+                        self.cacheList.addItem(i)
         
             
     # Save a cache file
