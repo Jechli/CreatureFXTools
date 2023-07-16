@@ -105,7 +105,7 @@ class CacheManager(QtWidgets.QDialog):
         self.refreshButton.clicked.connect(self.setNDynamicsNodesList)
         self.ndynamics_nodes_list.itemClicked.connect(self.setCachesList)
         self.saveButton.clicked.connect(self.saveCache)
-        
+        self.assignButton.clicked.connect(self.switchCache)
         
         
     """
@@ -123,11 +123,13 @@ class CacheManager(QtWidgets.QDialog):
         nFilter.sort()
         return nFilter
         
+        
     # Add the list of nCloth and nHair nodes to the cache list
     def setNDynamicsNodesList(self):
         self.ndynamics_nodes_list.clear()
         for node in self.getNDynamicsNodes():
             self.ndynamics_nodes_list.addItem(str(node))
+            
             
     # Set list of caches associated with selected node
     def setCachesList(self):
@@ -137,19 +139,18 @@ class CacheManager(QtWidgets.QDialog):
             first_item = items[0].text()
             list_of_files = os.listdir(self.default_file_loc)
             for i in list_of_files:
-                if i.endswith('.mc'):
-                    if (first_item+"__") in i:
-                        self.cacheList.addItem(i)
+                if i.endswith('.xml'):
+                    if (first_item+"___") in i:
+                        self.cacheList.addItem(i.split('.xml')[0])
         
             
     # Save a cache file
     def saveCache(self):
-        print(self.ndynamics_nodes_list.currentItem().text())
         
-        version = "2"
+        version = "5"
         time_range_mode = "2"
         start_frame = "1"
-        end_frame = "20"
+        end_frame = "10"
         cache_file_dist = "OneFile" #or OneFilePerFrame
         refresh_caching = "1"
         cache_directory = self.saveLocationEdit.text()
@@ -183,10 +184,24 @@ class CacheManager(QtWidgets.QDialog):
         ncache_eval_str += store_doubles_as_floats + '","'
         ncache_eval_str += cache_file + '" } ;'
         
-        select_node = self.ndynamics_nodes_list.currentItem().text()
-        pm.select(select_node)
+        selected_node = self.ndynamics_nodes_list.currentItem().text()
+        pm.select(selected_node)
         pm.mel.eval(ncache_eval_str)
         
+        
+    # Switch cache
+    def switchCache(self):
+        selected_node = self.ndynamics_nodes_list.currentItem().text().split('Shape')[0]
+        print(selected_node)
+        pm.select(selected_node)
+        pm.mel.eval('deleteCacheFile 2 { "keep", "" } ;') 
+        cache_file_mel = 'cacheFile -attachFile -fileName '
+        cache_file_mel += '"' + self.cacheList.currentItem().text() + '" '
+        cache_file_mel += '-directory "' + self.saveLocationEdit.text() + '"  '
+        cache_file_mel += '-cnm "'+self.ndynamics_nodes_list.currentItem().text()
+        cache_file_mel += '" -ia ' + self.ndynamics_nodes_list.currentItem().text() + '.positions;'
+        pm.mel.eval(cache_file_mel)
+
 """
 Run Window
 """         
