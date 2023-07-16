@@ -5,6 +5,10 @@ import maya.OpenMayaUI as omui
 import pymel.core as pm
 import os
 
+"""
+TURN OFF CACHED PLAYBACK TO USE THIS TOOL PROPERLY
+"""
+
 def maya_main_window():
     main_window_ptr = omui.MQtUtil.mainWindow()
     return wrapInstance(int(main_window_ptr), QtWidgets.QWidget)
@@ -127,6 +131,7 @@ class CacheManager(QtWidgets.QDialog):
     # Add the list of nCloth and nHair nodes to the cache list
     def setNDynamicsNodesList(self):
         self.ndynamics_nodes_list.clear()
+        self.cacheList.clear()
         for node in self.getNDynamicsNodes():
             self.ndynamics_nodes_list.addItem(str(node))
             
@@ -191,10 +196,11 @@ class CacheManager(QtWidgets.QDialog):
         
     # Switch cache
     def switchCache(self):
-        selected_node = self.ndynamics_nodes_list.currentItem().text().split('Shape')[0]
-        print(selected_node)
+        selected_node = self.ndynamics_nodes_list.currentItem().text()
         pm.select(selected_node)
-        pm.mel.eval('deleteCacheFile 2 { "keep", "" } ;') 
+        if pm.listConnections(selected_node, type='cacheFile'):
+            pm.mel.eval('deleteCacheFile 2 { "keep", "" } ;') 
+            pm.select(selected_node)
         cache_file_mel = 'cacheFile -attachFile -fileName '
         cache_file_mel += '"' + self.cacheList.currentItem().text() + '" '
         cache_file_mel += '-directory "' + self.saveLocationEdit.text() + '"  '
